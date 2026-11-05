@@ -46,39 +46,32 @@ internal static class Watcher
         var stops = stop == null ? new WaitHandle[] { stopEvent } : new WaitHandle[] { stopEvent, stop };
         bool Stopped(TimeSpan wait) => WaitHandle.WaitAny(stops, wait) != WaitHandle.WaitTimeout;
 
-        var roots = OpenRoots();
-        try
-        {
-            var known = DoSync(log, onlyKeys, "start");
-            string last = Fingerprint(roots, known);
-            var lastSync = DateTime.UtcNow;
-            ready?.Set();
+        var roots = Roots();
+        var known = DoSync(log, onlyKeys, "start");
+        string last = Fingerprint(roots, known);
+        var lastSync = DateTime.UtcNow;
+        ready?.Set();
 
-            while (true)
-            {
-                if (Stopped(Poll)) { log("stopping"); return 0; }
-                string now = Fingerprint(roots, known);
-                bool changed = now != last;
-                if (!changed && DateTime.UtcNow - lastSync < Safety) continue;
-                if (changed)
-                {
-                    // winget writes several values, sometimes across keys; wait until it has been quiet for a moment.
-                    while (true)
-                    {
-                        if (Stopped(Settle)) { log("stopping"); return 0; }
-                        string again = Fingerprint(roots, known);
-                        if (again == now) break;
-                        now = again;
-                    }
-                }
-                known = DoSync(log, onlyKeys, changed ? "change" : "periodic");
-                last = Fingerprint(roots, known);
-                lastSync = DateTime.UtcNow;
-            }
-        }
-        finally
+        while (true)
         {
-            foreach (var r in roots) r.Key.Dispose();
+            if (Stopped(Poll)) { log("stopping"); return 0; }
+            string now = Fingerprint(roots, known);
+            bool changed = now != last;
+            if (!changed && DateTime.UtcNow - lastSync < Safety) continue;
+            if (changed)
+            {
+                // winget writes several values, sometimes across keys; wait until it has been quiet for a moment.
+                while (true)
+                {
+                    if (Stopped(Settle)) { log("stopping"); return 0; }
+                    string again = Fingerprint(roots, known);
+                    if (again == now) break;
+                    now = again;
+                }
+            }
+            known = DoSync(log, onlyKeys, changed ? "change" : "periodic");
+            last = Fingerprint(roots, known);
+            lastSync = DateTime.UtcNow;
         }
     }
 
@@ -99,25 +92,21 @@ internal static class Watcher
 
     private sealed class Root
     {
-        public RegistryKey Key;
-        public bool Machine;
+        public RegistryHive Hive;
+        public RegistryView View;
+        public bool Machine => Hive == RegistryHive.LocalMachine;
     }
 
-    private static List<Root> OpenRoots()
+    // Opened afresh on every poll: on a new profile the per-user Uninstall key doesn't exist until the first install.
+    private static List<Root> Roots()
     {
-        var list = new List<Root>();
-        void Add(RegistryHive h, RegistryView v)
+        var list = new List<Root> { new() { Hive = RegistryHive.CurrentUser, View = RegistryView.Default } };
+        if (Environment.Is64BitOperatingSystem)
         {
-            try
-            {
-                var k = RegistryKey.OpenBaseKey(h, v).OpenSubKey(WingetRegistry.UninstallPath);
-                if (k != null) list.Add(new Root { Key = k, Machine = h == RegistryHive.LocalMachine });
-            }
-            catch { }
+            list.Add(new Root { Hive = RegistryHive.LocalMachine, View = RegistryView.Registry64 });
+            list.Add(new Root { Hive = RegistryHive.LocalMachine, View = RegistryView.Registry32 });
         }
-        Add(RegistryHive.CurrentUser, RegistryView.Default);
-        if (Environment.Is64BitOperatingSystem) { Add(RegistryHive.LocalMachine, RegistryView.Registry64); Add(RegistryHive.LocalMachine, RegistryView.Registry32); }
-        else Add(RegistryHive.LocalMachine, RegistryView.Default);
+        else list.Add(new Root { Hive = RegistryHive.LocalMachine, View = RegistryView.Default });
         return list;
     }
 
@@ -131,22 +120,31 @@ internal static class Watcher
         var sb = new System.Text.StringBuilder();
         foreach (var r in roots)
         {
-            Stamp(r.Key, out long t, out int n);
-            sb.Append(t).Append('/').Append(n).Append(';');
-            foreach (var p in known.Where(p => p.MachineScope == r.Machine))
-            {
-                try
-                {
-                    using var k = r.Key.OpenSubKey(p.Key);
-                    if (k == null) { sb.Append('-'); continue; }
-                    Stamp(k, out long pt, out _);
-                    sb.Append(pt).Append(',');
-                }
-                catch { sb.Append('!'); }
-            }
-            sb.Append('|');
+            try { AppendRoot(sb, r, known); }
+            catch { sb.Append("err|"); }
         }
         return sb.ToString();
+    }
+
+    private static void AppendRoot(System.Text.StringBuilder sb, Root r, List<PortablePackage> known)
+    {
+        using var baseKey = RegistryKey.OpenBaseKey(r.Hive, r.View);
+        using var un = baseKey.OpenSubKey(WingetRegistry.UninstallPath);
+        if (un == null) { sb.Append("none|"); return; }
+        Stamp(un, out long t, out int n);
+        sb.Append(t).Append('/').Append(n).Append(';');
+        foreach (var p in known.Where(p => p.MachineScope == r.Machine))
+        {
+            try
+            {
+                using var k = un.OpenSubKey(p.Key);
+                if (k == null) { sb.Append('-'); continue; }
+                Stamp(k, out long pt, out _);
+                sb.Append(pt).Append(',');
+            }
+            catch { sb.Append('!'); }
+        }
+        sb.Append('|');
     }
 
     private static void Stamp(RegistryKey k, out long lastWrite, out int subKeys)
