@@ -6,7 +6,7 @@
 Install with winget, find it in Start. Uninstall, and the shortcut goes too.</p>
 
 <p align="center">
-  <a href="https://github.com/BoazCohenJ/PortaStart/releases/latest/download/PortaStart.exe"><b>Download PortaStart.exe</b></a> (85 KB, Windows 10/11)
+  <a href="https://github.com/BoazCohenJ/PortaStart/releases/latest/download/PortaStart.exe"><b>Download PortaStart.exe</b></a> (87 KB, Windows 10/11)
   · <a href="https://boazcohenj.github.io/PortaStart/">Website</a>
 </p>
 
