@@ -74,6 +74,9 @@ If winget (or anything else) creates a Start menu shortcut to the same exe, Port
 **What about packages installed by other package managers (Scoop, Chocolatey)?**
 Scoop already makes Start menu shortcuts. PortaStart only looks at winget's portable installs, and it never touches regular installer-based (MSI/EXE) packages, which make their own shortcuts.
 
+**Doesn't Winhance do this?**
+For apps you install *through Winhance*, yes: since January 2026 the Winhance tweaking suite creates a Start menu folder with shortcuts to every exe in a portable package it installs. PortaStart works with plain winget (the commands you type, scripts, other front ends), picks the main program instead of every exe, and removes the shortcut when you uninstall.
+
 **Can I put everything in one folder?**
 `PortaStart folder "WinGet Apps"`. The shortcuts move there. `PortaStart folder ""` moves them back to the top level, where Windows' own guidelines put single-app shortcuts.
 

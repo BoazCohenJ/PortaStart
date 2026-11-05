@@ -190,6 +190,7 @@
     <details><summary>What if winget adds Start menu shortcuts itself one day?</summary><p>PortaStart doesn't add a shortcut for an exe that already has one in the Start menu, so the two won't double up for new installs. <code>PortaStart remove-all</code> cleans up its own.</p></details>
     <details><summary>Does it work for machine-wide installs (<code>--scope machine</code>)?</summary><p>Yes. It reads those too, and puts their shortcuts in your own Start menu, so it never needs admin rights.</p></details>
     <details><summary>What about regular (installer-based) winget packages, or Scoop?</summary><p>Those already create their own shortcuts, so PortaStart ignores them. It only acts on winget's portable installs.</p></details>
+    <details><summary>Doesn't Winhance do this?</summary><p>For apps you install <i>through Winhance</i>, yes: since January 2026 the Winhance tweaking suite creates a Start menu folder with shortcuts to every exe in a portable package it installs. PortaStart works with plain winget (the commands you type, scripts, other front ends), picks the main program instead of every exe, and removes the shortcut when you uninstall.</p></details>
     <details><summary>Where does it keep its data?</summary><p><code>%LOCALAPPDATA%\PortaStart</code>: the list of shortcuts it made (only those are ever changed or removed), your settings, and a short log. It makes no network connections.</p></details>
   </section>
 
