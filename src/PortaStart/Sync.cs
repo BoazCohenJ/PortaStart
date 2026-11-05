@@ -61,7 +61,7 @@ internal static class State
         path ??= FilePath;
         var list = new List<Owned>();
         if (!File.Exists(path)) return list;
-        foreach (var line in File.ReadAllLines(path))
+        foreach (var line in Retry(() => File.ReadAllLines(path)))
         {
             var f = line.Split('\t');
             if (f.Length < 4 || line.StartsWith("#")) continue;
@@ -76,9 +76,23 @@ internal static class State
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         var sb = new StringBuilder("# Shortcuts PortaStart made. Only these are ever changed or removed.\n");
         foreach (var o in owned) sb.Append($"{o.LnkPath}\t{o.PackageKey}\t{o.ExePath}\t{(o.Dismissed ? "dismissed" : "active")}\n");
-        string tmp = path + ".tmp";
-        File.WriteAllText(tmp, sb.ToString());
-        if (File.Exists(path)) File.Replace(tmp, path, null); else File.Move(tmp, path);
+        string tmp = path + "." + System.Diagnostics.Process.GetCurrentProcess().Id + ".tmp";
+        Retry(() =>
+        {
+            File.WriteAllText(tmp, sb.ToString());
+            if (File.Exists(path)) File.Replace(tmp, path, null); else File.Move(tmp, path);
+            return 0;
+        });
+    }
+
+    /// <summary>The watcher and a command run by hand can touch the file at the same moment; the window is milliseconds.</summary>
+    private static T Retry<T>(Func<T> f)
+    {
+        for (int i = 0; ; i++)
+        {
+            try { return f(); }
+            catch (Exception e) when ((e is IOException || e is UnauthorizedAccessException) && i < 20) { Thread.Sleep(50); }
+        }
     }
 }
 
