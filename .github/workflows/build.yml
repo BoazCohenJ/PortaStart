@@ -1,0 +1,50 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Test
+        run: dotnet test tests/PortaStart.Tests -c Release
+
+      - name: Build
+        run: dotnet build src/PortaStart -c Release
+
+      # Fakes winget portable installs, upgrades and removals on the runner and checks the watcher's reactions.
+      - name: Self-test
+        run: src/PortaStart/bin/Release/net48/PortaStart.exe self-test
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item src/PortaStart/bin/Release/net48/PortaStart.exe dist/
+          $hash = (Get-FileHash dist/PortaStart.exe -Algorithm SHA256).Hash.ToLower()
+          # LF line ending so `sha256sum -c` works on Linux, macOS and Git Bash.
+          [IO.File]::WriteAllText("$PWD/dist/PortaStart.exe.sha256", "$hash  PortaStart.exe`n")
+          Get-Content dist/PortaStart.exe.sha256
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: PortaStart
+          path: dist/
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create "${{ github.ref_name }}" dist/PortaStart.exe dist/PortaStart.exe.sha256 `
+            --title "PortaStart ${{ github.ref_name }}" --notes-file .github/release-notes.md

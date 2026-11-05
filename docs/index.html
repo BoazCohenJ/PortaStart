@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PortaStart: Start menu shortcuts for winget portable apps</title>
+<meta name="description" content="Free, open-source Windows tool that adds Start menu shortcuts for GUI apps installed as winget portable packages, and keeps them in sync as you install, upgrade and uninstall.">
+<link rel="icon" type="image/png" href="icon-64.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="PortaStart: Start menu shortcuts for winget portable apps">
+<meta property="og:description" content="winget's portable packages never get a Start menu entry. PortaStart adds one for every GUI app and keeps them in sync.">
+<meta property="og:url" content="https://boazcohenj.github.io/PortaStart/">
+<meta property="og:image" content="https://boazcohenj.github.io/PortaStart/social.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root {
+    --bg: #f9f9f7;
+    --surface: #ffffff;
+    --text: #0b0b0b;
+    --muted: #52514e;
+    --line: #e1e0d9;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --accent-soft: #e6f0fc;
+    --good: #0ca30c;
+    --bad: #d03b3b;
+    --code: #f0efec;
+    --shadow: 0 1px 2px rgba(11, 11, 11, .05), 0 10px 30px rgba(11, 11, 11, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a19;
+      --text: #ffffff;
+      --muted: #c3c2b7;
+      --line: #2c2c2a;
+      --accent: #3987e5;
+      --accent-ink: #ffffff;
+      --accent-soft: #16243a;
+      --code: #232322;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .4);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  a { color: var(--accent); }
+  img { max-width: 100%; height: auto; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 16px; }
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+  .brand img { width: 30px; height: 30px; }
+  .top nav a { color: var(--muted); text-decoration: none; margin-left: 18px; font-size: 15px; }
+  .top nav a:hover { color: var(--text); }
+
+  .hero { display: grid; grid-template-columns: 1fr 1.15fr; gap: 44px; align-items: center; padding: 32px 0 56px; }
+  h1 { font-size: clamp(32px, 4.6vw, 50px); line-height: 1.08; letter-spacing: -.02em; margin: 0 0 18px; }
+  .lede { font-size: 19px; color: var(--muted); margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 16px; border: 1px solid var(--line); color: var(--text); background: var(--surface); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow); }
+  .btn:hover { filter: brightness(1.06); }
+  .meta { margin-top: 16px; color: var(--muted); font-size: 14px; }
+  .shot { display: block; border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--surface); overflow: hidden; }
+  .shot img { display: block; }
+  .caption { font-size: 14px; color: var(--muted); margin-top: 10px; text-align: center; }
+
+  section { padding: 48px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(26px, 3.2vw, 34px); line-height: 1.2; letter-spacing: -.01em; margin: 0 0 12px; }
+  .intro { color: var(--muted); max-width: 44em; margin: 0 0 28px; }
+
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  tr:last-child td { border-bottom: 0; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  ol.steps { padding-left: 22px; margin: 0; } ol.steps li { margin: 0 0 12px; }
+  code { background: var(--code); padding: 2px 6px; border-radius: 5px; font-size: .9em; }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 0 0 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 10px 0 0; color: var(--muted); }
+  .why li { margin: 0 0 8px; }
+  kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: .85em; background: var(--surface); }
+  .features { grid-template-columns: repeat(3, 1fr); }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 860px) {
+    .hero, .two { grid-template-columns: 1fr; gap: 28px; }
+    .features { grid-template-columns: 1fr; }
+    .top nav a:not(.gh) { display: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) { .btn { transition: filter .15s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#"><img src="icon-64.png" alt="">PortaStart</a>
+    <nav>
+      <a href="#how">How it picks</a>
+      <a href="#faq">FAQ</a>
+      <a class="gh" href="https://github.com/BoazCohenJ/PortaStart">GitHub</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>You installed it with winget. Now find it in Start.</h1>
+      <p class="lede">winget's portable packages (Process Explorer, Syncthing Tray and many more) never get a Start menu entry. PortaStart adds one for every GUI app, keeps them in sync as you install, upgrade and uninstall, and never touches anything else.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/BoazCohenJ/PortaStart/releases/latest/download/PortaStart.exe">⬇ Download for Windows</a>
+        <a class="btn" href="https://github.com/BoazCohenJ/PortaStart">Source on GitHub</a>
+      </div>
+      <p class="meta">Windows 10 and 11 · one 85 KB exe, no admin, nothing to install · open source (MIT) · no network access</p>
+    </div>
+    <div>
+      <div class="shot"><img src="terminal.png" width="1240" height="648" alt="A PowerShell session: winget installs Process Explorer, and PortaStart list shows shortcuts for Process Explorer and Syncthing Tray while ripgrep, a console tool, gets none"></div>
+      <p class="caption">Sample session. Console tools like ripgrep stay off the Start menu.</p>
+    </div>
+  </div>
+
+  <section>
+    <h2>The gap</h2>
+    <p class="intro">For a portable package, winget unzips the program into a folder and puts a symlink on your PATH. Great for <code>rg</code>, useless for a GUI app: <kbd>Win</kbd> + typing the name finds nothing, and launchers that index the Start menu (PowerToys Run, Flow Launcher) can't see it either. Pointing the Start menu at winget's <code>Links</code> folder doesn't work, because the Start menu ignores symlinks. People have asked for this in <a href="https://github.com/microsoft/winget-cli/issues/2299">winget-cli#2299</a> since 2022.</p>
+    <div class="features">
+      <div class="card"><h3>Automatic</h3><p>A tiny background watcher notices when winget changes its install records and adds, fixes or removes shortcuts within about 5 seconds. No window, no tray icon.</p></div>
+      <div class="card"><h3>Picks the right exe</h3><p>Reads each exe's header: GUI programs only, no uninstallers or updaters, and the x64, ARM64 or x86 build that matches your PC.</p></div>
+      <div class="card"><h3>Polite</h3><p>Never touches shortcuts it didn't make, skips apps that already have one, and a shortcut you delete stays deleted.</p></div>
+      <div class="card"><h3>Named properly</h3><p>"Process Explorer", not "procexp64". Shortcuts go at the top level of Start, or in a folder you choose.</p></div>
+      <div class="card"><h3>No admin</h3><p>Everything goes in your own Start menu, even for machine-wide packages. It doesn't need elevation for anything.</p></div>
+      <div class="card"><h3>One-command undo</h3><p><code>PortaStart remove-all</code> removes every shortcut it made and stops the watcher.</p></div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How it decides what gets a shortcut</h2>
+    <p class="intro">winget records every portable install in the Uninstall registry key (the same data <code>winget list</code> uses) with the exe it installed and its folder. PortaStart reads that and nothing else.</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Package</th><th>Shortcut</th><th>Example</th></tr>
+        <tr><td>Single GUI exe</td><td>That exe, named after the package</td><td>A portable editor or utility</td></tr>
+        <tr><td>Zip with several builds</td><td>The build for your CPU, named like the package</td><td>Process Explorer → <code>procexp64.exe</code> on x64, <code>procexp64a.exe</code> on ARM64</td></tr>
+        <tr><td>Zip with a GUI and a CLI</td><td>The GUI program only</td><td>Syncthing Tray → <code>syncthingtray.exe</code>, not <code>syncthingtray-cli.exe</code></td></tr>
+        <tr><td>Console tool</td><td>None, unless you run <code>PortaStart console &lt;id&gt;</code></td><td>ripgrep, fd, jq</td></tr>
+        <tr><td>Already has a Start menu shortcut</td><td>None: it leaves it alone</td><td>An app you also installed some other way</td></tr>
+        <tr><td>Uninstalled with winget</td><td>Its shortcut is removed</td><td></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="two">
+      <div>
+        <h2>Get started</h2>
+        <ol class="steps">
+          <li><a href="https://github.com/BoazCohenJ/PortaStart/releases/latest/download/PortaStart.exe">Download PortaStart.exe</a> and put it somewhere permanent, like <code>%LOCALAPPDATA%\Programs\PortaStart</code>.</li>
+          <li>Double-click it, or run <code>PortaStart</code> in a terminal. It creates shortcuts for the portable apps you already have and starts watching for new ones.</li>
+          <li>That's it. Run <code>PortaStart list</code> any time to see what got what.</li>
+        </ol>
+        <p class="meta">Windows SmartScreen may warn that the exe isn't signed yet: click <b>More info → Run anyway</b>, or build it from source. Each release has a SHA-256 checksum built by GitHub Actions.</p>
+      </div>
+      <div>
+        <h2>Commands</h2>
+        <div class="table-wrap">
+          <table>
+            <tr><td><code>PortaStart sync</code></td><td>Sync once (add <code>--dry-run</code> to preview)</td></tr>
+            <tr><td><code>PortaStart list</code></td><td>Your portable packages and their shortcuts</td></tr>
+            <tr><td><code>PortaStart exclude &lt;id&gt;</code></td><td>Keep a package out of Start</td></tr>
+            <tr><td><code>PortaStart include &lt;id&gt;</code></td><td>Undo that, or bring back a deleted shortcut</td></tr>
+            <tr><td><code>PortaStart folder "WinGet"</code></td><td>Put the shortcuts in a folder</td></tr>
+            <tr><td><code>PortaStart autostart off</code></td><td>Stop the background watcher</td></tr>
+            <tr><td><code>PortaStart remove-all</code></td><td>Undo everything</td></tr>
+            <tr><td><code>PortaStart self-test</code></td><td>Fake some installs and check it all works</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>FAQ</h2>
+    <details><summary>Does the background watcher slow anything down?</summary><p>No. Every 3 seconds it reads a few registry timestamps (0 ms of CPU over an idle minute in testing). When winget installs, upgrades or removes something, it syncs once winget has been quiet for two seconds, so a new app shows up in Start about 5 seconds after <code>winget install</code> finishes. It uses about 20 MB of private memory and runs with no window (<code>conhost --headless</code>), started from your Run key at sign-in.</p></details>
+    <details><summary>What if winget adds Start menu shortcuts itself one day?</summary><p>PortaStart doesn't add a shortcut for an exe that already has one in the Start menu, so the two won't double up for new installs. <code>PortaStart remove-all</code> cleans up its own.</p></details>
+    <details><summary>Does it work for machine-wide installs (<code>--scope machine</code>)?</summary><p>Yes. It reads those too, and puts their shortcuts in your own Start menu, so it never needs admin rights.</p></details>
+    <details><summary>What about regular (installer-based) winget packages, or Scoop?</summary><p>Those already create their own shortcuts, so PortaStart ignores them. It only acts on winget's portable installs.</p></details>
+    <details><summary>Where does it keep its data?</summary><p><code>%LOCALAPPDATA%\PortaStart</code>: the list of shortcuts it made (only those are ever changed or removed), your settings, and a short log. It makes no network connections.</p></details>
+  </section>
+
+  <section>
+    <h2>Why this exists</h2>
+    <p class="intro">Start menu entries for portable packages are one of winget's long-standing open requests, and the winget team has explained why it's hard to build into winget itself (manifest format, opt-in vs opt-out, upgrade behaviour). A separate, opt-in tool doesn't have those problems.</p>
+    <ul class="why">
+      <li><a href="https://github.com/microsoft/winget-cli/issues/2299">winget-cli#2299: Add start menu entries for portable applications</a>: open since July 2022, 100+ 👍, still asked about in 2025 and 2026</li>
+      <li><a href="https://github.com/microsoft/winget-cli/issues/4185">#4185: Implement automatic creation of shortcuts for portable programs</a> and <a href="https://github.com/microsoft/winget-cli/issues/3314">#3314: Add desktop shortcut for applications</a></li>
+      <li><a href="https://github.com/microsoft/winget-cli/issues/4930">#4930: Create Start Shortcut for portable apps</a> (closed as a duplicate of #2299)</li>
+    </ul>
+  </section>
+</div>
+<footer>
+  <div class="wrap">PortaStart is free and open source under the MIT license · <a href="https://github.com/BoazCohenJ/PortaStart">Source on GitHub</a> · <a href="https://github.com/BoazCohenJ/PortaStart/issues">Report a problem</a> · Not affiliated with Microsoft</div>
+</footer>
+</body>
+</html>
