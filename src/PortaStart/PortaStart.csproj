@@ -11,7 +11,7 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Product>PortaStart</Product>
     <Description>Start menu shortcuts for portable apps installed with winget.</Description>
     <Copyright>Copyright (c) 2026 BoazCohenJ</Copyright>

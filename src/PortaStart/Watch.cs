@@ -47,8 +47,8 @@ internal static class Watcher
         bool Stopped(TimeSpan wait) => WaitHandle.WaitAny(stops, wait) != WaitHandle.WaitTimeout;
 
         var roots = Roots();
-        var known = DoSync(log, onlyKeys, "start");
-        string last = Fingerprint(roots, known);
+        var known = new List<PortablePackage>();
+        string last = SyncAndStamp(log, onlyKeys, "start", roots, ref known, Fingerprint(roots, known));
         var lastSync = DateTime.UtcNow;
         ready?.Set();
 
@@ -69,10 +69,22 @@ internal static class Watcher
                     now = again;
                 }
             }
-            known = DoSync(log, onlyKeys, changed ? "change" : "periodic");
-            last = Fingerprint(roots, known);
+            last = SyncAndStamp(log, onlyKeys, changed ? "change" : "periodic", roots, ref known, now);
             lastSync = DateTime.UtcNow;
         }
+    }
+
+    /// <summary>
+    /// Syncs, and returns the fingerprint to compare future polls against. If anything changed while the sync ran
+    /// (<paramref name="before"/> no longer matches), returns "" so the next poll syncs again instead of missing it.
+    /// </summary>
+    private static string SyncAndStamp(Action<string> log, ICollection<string> onlyKeys, string why, List<Root> roots,
+                                       ref List<PortablePackage> known, string before)
+    {
+        var found = DoSync(log, onlyKeys, why);
+        bool movedDuringSync = Fingerprint(roots, known) != before;
+        known = found;
+        return movedDuringSync ? "" : Fingerprint(roots, known);
     }
 
     /// <returns>The portable packages found, whose own keys are then watched for upgrades.</returns>
